@@ -13,7 +13,7 @@ router.get('/api/card', async(req, res) => {
         const result = docs.map(doc => ({
             id: doc.id,
             name: doc.data().name,
-            description: doc.data().description 
+            state: doc.data().state
         }))
 
         return res.status(200).json(result);
@@ -38,14 +38,14 @@ router.get('/api/card/:id', async(req, res) => {
 
 router.post('/api/card',async (req, res)=> {
     try {
-        await db.collection('card').doc('/' + req.body.id + '/').create({
+        const newCard = {
             name: req.body.name,
-            description: req.body.description
-        })
-        return res.status(200).json()
-    }
-    catch (error){
-        console.log(error);
+            state: req.body.state
+        };
+        await db.collection('card').add(newCard);
+        return res.status(201).json(newCard);
+    } catch (error) {
+        console.error(error);
         return res.status(500).send(error);
     }
 })
@@ -62,14 +62,20 @@ router.delete('/api/card/:id', async (req, res)=> {
 })
 
 router.put('/api/card/:id', async (req,res) => {
-    try {
-        const card = db.collection('card').doc(req.params.id);
-        await card.update({
+ try {
+        const cardId = req.params.id;
+        if (!cardId) {
+            return res.status(400).send('Card ID is required');
+        }
+
+        const updatedCard = {
             name: req.body.name,
-            description: req.body.description
-        });
-        return res.status(200).json();
-    }catch (error){
+            state: req.body.state
+        };
+
+        await db.collection('card').doc(cardId).update(updatedCard);
+        return res.status(200).json({ message: 'Card updated successfully' });
+    } catch (error) {
         console.error(error);
         return res.status(500).send(error);
     }
